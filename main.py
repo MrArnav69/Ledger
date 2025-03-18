@@ -29,12 +29,22 @@ st.set_page_config(
 try:
     # Check if Firebase is already initialized
     if not firebase_admin._apps:
-        cred = credentials.Certificate("ledger-application-firebase-adminsdk-fbsvc-fb27c717fe.json")
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': 'https://ledger-application-default-rtdb.firebaseio.com/'
-        })
-    using_firebase = True
-    firebase_db = db.reference('/')
+        # Get credentials from environment variable
+        cred_json = os.environ.get('FIREBASE_CREDENTIALS')
+        if cred_json:
+            cred_dict = json.loads(cred_json)
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred, {
+                'databaseURL': 'https://ledger-application-default-rtdb.firebaseio.com/'
+            })
+            using_firebase = True
+            firebase_db = db.reference('/')
+        else:
+            st.sidebar.warning("Firebase credentials not found in environment variables. Using local storage.")
+            using_firebase = False
+    else:
+        using_firebase = True
+        firebase_db = db.reference('/')
 except Exception as e:
     st.sidebar.error(f"Firebase initialization error: {e}")
     using_firebase = False
